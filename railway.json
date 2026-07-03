@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install && npm run build",
+    "buildCommand": "npm install && npx prisma migrate deploy && npm run build",
     "nixpacksConfig": {
       "pkgs": ["ffmpeg"]
     }
@@ -13,9 +13,8 @@
     "restartPolicyMaxRetries": 5
   },
   "env": {
-    "DATABASE_URL": "file:./dev.db",
-    "ARK_API_KEY": "",
-    "DOUBAO_API_KEY": "",
+    "DATABASE_PROVIDER": "postgresql",
+    "DOUBAO_MODEL_ID": "doubao-seed-2-0-lite-260428",
     "SEEDANCE_MODEL_ID": "doubao-seedance-2-0"
   }
 }
