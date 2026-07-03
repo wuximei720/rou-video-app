@@ -28,9 +28,10 @@ export default function HistoryList({ onSelect }: HistoryListProps) {
     try {
       const response = await fetch('/api/history')
       const data = await response.json()
-      setHistory(data)
+      setHistory(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Failed to fetch history:', error)
+      setHistory([])
     } finally {
       setIsLoading(false)
     }
