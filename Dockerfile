@@ -26,12 +26,13 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --only=production
+COPY --from=builder /app/prisma ./prisma
+
+RUN npm ci --omit=dev
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/prisma ./prisma
 
 RUN mkdir -p /app/public/temp
 
