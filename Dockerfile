@@ -8,13 +8,11 @@ WORKDIR /app
 
 COPY package*.json ./
 
-ENV DATABASE_URL="postgresql://localhost:5432/app"
-
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 COPY . .
 
-RUN npx prisma generate
+RUN DATABASE_URL="postgresql://localhost:5432/app" npx prisma generate
 
 RUN npm run build
 
