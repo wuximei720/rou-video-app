@@ -30,8 +30,6 @@ COPY package*.json ./
 
 COPY --from=builder /app/prisma ./prisma
 
-ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
-
 RUN npm ci --omit=dev
 
 COPY --from=builder /app/.next ./.next
