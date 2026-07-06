@@ -12,13 +12,9 @@ RUN npm ci --ignore-scripts
 
 COPY . .
 
-RUN echo 'DATABASE_URL="postgresql://localhost:5432/app"' > .env
-
 RUN npx prisma generate
 
 RUN npm run build
-
-RUN rm .env
 
 FROM node:20-slim AS runner
 
@@ -39,6 +35,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 RUN mkdir -p /app/public/temp
+
+RUN rm -f .env
 
 EXPOSE 3000
 
