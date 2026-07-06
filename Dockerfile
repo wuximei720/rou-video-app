@@ -12,9 +12,13 @@ RUN npm ci --ignore-scripts
 
 COPY . .
 
-RUN DATABASE_URL="postgresql://localhost:5432/app" npx prisma generate
+RUN echo 'DATABASE_URL="postgresql://localhost:5432/app"' > .env
+
+RUN npx prisma generate
 
 RUN npm run build
+
+RUN rm .env
 
 FROM node:20-slim AS runner
 
