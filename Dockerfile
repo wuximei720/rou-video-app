@@ -30,7 +30,7 @@ COPY package*.json ./
 
 COPY --from=builder /app/prisma ./prisma
 
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev --ignore-scripts
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
