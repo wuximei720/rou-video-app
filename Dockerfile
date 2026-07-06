@@ -32,15 +32,13 @@ COPY package*.json ./
 
 COPY --from=builder /app/prisma ./prisma
 
-RUN npm ci --omit=dev
+RUN echo 'DATABASE_URL="postgresql://localhost:5432/app"' > .env && npm ci --omit=dev --ignore-scripts && rm -f .env
 
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 RUN mkdir -p /app/public/temp
-
-RUN rm -f .env
 
 EXPOSE 3000
 
