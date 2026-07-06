@@ -8,7 +8,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
-ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
+ENV DATABASE_URL="postgresql://localhost:5432/app"
 
 RUN npm ci
 
@@ -29,8 +29,6 @@ WORKDIR /app
 COPY package*.json ./
 
 COPY --from=builder /app/prisma ./prisma
-
-ENV DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy"
 
 RUN npm ci --omit=dev --ignore-scripts
 
