@@ -36,8 +36,6 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 RUN mkdir -p /app/public/temp
 
-RUN rm -f .env
-
 EXPOSE 3000
 
 CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
