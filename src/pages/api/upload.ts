@@ -26,18 +26,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const buffer = Buffer.from(base64Data, 'base64')
     const ext = image.split(';')[0].split('/')[1] || 'jpg'
     const filename = `${Date.now()}.${ext}`
-    const uploadDir = path.join(process.cwd(), 'data', 'uploads')
 
+    const uploadDir = path.join(process.cwd(), 'data', 'uploads')
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true })
     }
-
     const filePath = path.join(uploadDir, filename)
     fs.writeFileSync(filePath, buffer)
 
+    const protocol = req.headers['x-forwarded-proto'] || 'http'
+    const host = req.headers['host'] || 'localhost:3000'
+    const fullUrl = `${protocol}://${host}/api/uploads/${filename}`
+
     res.status(200).json({
-      path: `/api/uploads/${filename}`,
+      path: fullUrl,
       filename,
+      isLocal: !req.headers['x-forwarded-proto'],
     })
   } catch (error) {
     console.error('Upload error:', error)

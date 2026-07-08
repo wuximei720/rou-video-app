@@ -2,6 +2,14 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/db'
 import { analyzeScenes } from '@/services/llm'
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '15mb',
+    },
+  },
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -16,10 +24,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const scenes = await analyzeScenes(userInput)
 
+    let fullReferenceImageUrl: string | undefined
+    if (referenceImageUrl) {
+      if (referenceImageUrl.startsWith('http://') || referenceImageUrl.startsWith('https://')) {
+        fullReferenceImageUrl = referenceImageUrl
+      } else {
+        const protocol = req.headers['x-forwarded-proto'] || 'http'
+        const host = req.headers['host'] || 'localhost:3000'
+        fullReferenceImageUrl = `${protocol}://${host}${referenceImageUrl}`
+      }
+    }
+
     const generation = await prisma.videoGeneration.create({
       data: {
         userInput,
-        referenceImageUrl,
+        referenceImageUrl: fullReferenceImageUrl,
         scenes: JSON.stringify(scenes),
         status: 'analyzed',
       },

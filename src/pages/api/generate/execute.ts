@@ -74,15 +74,23 @@ async function executeVideoGeneration(id: string) {
 
     const scenes = JSON.parse(generation.scenes) as Array<{ prompt: string; duration: number; description: string }>
 
-    const imageUrls = generation.referenceImageUrl
-      ? [generation.referenceImageUrl]
-      : undefined
+    let imageUrls: string[] | undefined
+    if (generation.referenceImageUrl) {
+      const url = generation.referenceImageUrl
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        imageUrls = [url]
+      } else {
+        console.warn('Skipping reference image - invalid URL format:', url)
+      }
+    }
 
     const videoUrl = await generateVideo({
       prompt: scenes.map(s => s.prompt).join(' | '),
       imageUrls,
       aspectRatio: '9:16',
-      duration: scenes.reduce((sum, s) => sum + s.duration, 0),
+      duration: 12,
+      resolution: '720p',
+      generateAudio: true,
     })
 
     const { videoUrl: generatedVideoUrl, lastFrameUrl } = await waitForVideo(videoUrl.taskId)

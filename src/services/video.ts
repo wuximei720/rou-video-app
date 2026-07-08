@@ -38,6 +38,11 @@ export async function addSubtitles(inputPath: string, outputPath: string, subtit
       .outputOptions([
         `-vf`,
         `subtitles='${escapedSrtPath}':force_style='FontName=SimHei,FontSize=24,PrimaryColour=&HFFFFFF&,OutlineColour=&H000000&,Outline=1,Shadow=2,MarginV=20'`,
+        '-c:v libx264',
+        '-crf 18',
+        '-preset slow',
+        '-c:a aac',
+        '-b:a 192k',
       ])
       .save(outputPath)
       .on('end', () => {
@@ -66,6 +71,19 @@ export async function addBackgroundMusic(inputPath: string, outputPath: string, 
           '-filter_complex', '[1:a]volume=0.3[a1];[0:a][a1]amix=inputs=2:duration=first:dropout_transition=3[aout]',
           '-map', '0:v',
           '-map', '[aout]',
+          '-c:v libx264',
+          '-crf 18',
+          '-preset slow',
+          '-c:a aac',
+          '-b:a 192k',
+        ])
+    } else {
+      command
+        .outputOptions([
+          '-c:v libx264',
+          '-crf 18',
+          '-preset slow',
+          '-c:a copy',
         ])
     }
 
@@ -95,7 +113,13 @@ export async function applyFilter(inputPath: string, outputPath: string, filter:
     }
 
     ffmpeg(inputPath)
-      .outputOptions(['-vf', filterComplex])
+      .outputOptions([
+        '-vf', filterComplex,
+        '-c:v libx264',
+        '-crf 18',
+        '-preset slow',
+        '-c:a copy',
+      ])
       .save(outputPath)
       .on('end', () => resolve(outputPath))
       .on('error', reject)

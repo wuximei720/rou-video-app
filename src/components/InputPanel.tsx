@@ -1,24 +1,87 @@
 import React, { useState, useCallback } from 'react'
-import { Upload, Image, X } from 'lucide-react'
+import { Upload, Image as ImageIcon, X } from 'lucide-react'
 
 interface InputPanelProps {
   onSubmit: (userInput: string, imageUrl: string | null) => void
   isLoading: boolean
 }
 
+const MAX_IMAGE_SIZE = 1 * 1024 * 1024
+
+function compressImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        let quality = 0.9
+        const targetSize = MAX_IMAGE_SIZE
+        let canvas = document.createElement('canvas')
+        let ctx = canvas.getContext('2d')
+        
+        if (!ctx) {
+          reject(new Error('无法创建画布上下文'))
+          return
+        }
+
+        let width = img.width
+        let height = img.height
+        const maxDimension = 2048
+        
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height / width) * maxDimension
+            width = maxDimension
+          } else {
+            width = (width / height) * maxDimension
+            height = maxDimension
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+        ctx.drawImage(img, 0, 0, width, height)
+
+        let compressedDataUrl = canvas.toDataURL('image/jpeg', quality)
+        
+        while (compressedDataUrl.length * 0.75 > targetSize && quality > 0.1) {
+          quality -= 0.1
+          compressedDataUrl = canvas.toDataURL('image/jpeg', quality)
+        }
+
+        resolve(compressedDataUrl)
+      }
+      img.onerror = () => reject(new Error('图片加载失败'))
+      img.src = event.target?.result as string
+    }
+    reader.onerror = () => reject(new Error('文件读取失败'))
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
   const [userInput, setUserInput] = useState('')
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [isCompressing, setIsCompressing] = useState(false)
 
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        setImageUrl(event.target?.result as string)
+      setIsCompressing(true)
+      try {
+        const compressedUrl = await compressImage(file)
+        setImageUrl(compressedUrl)
+      } catch (error) {
+        console.error('图片压缩失败:', error)
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          setImageUrl(event.target?.result as string)
+        }
+        reader.readAsDataURL(file)
+      } finally {
+        setIsCompressing(false)
       }
-      reader.readAsDataURL(file)
     }
   }, [])
 
@@ -32,16 +95,25 @@ export default function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
     setIsDragging(false)
   }, [])
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
     const file = e.dataTransfer.files?.[0]
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        setImageUrl(event.target?.result as string)
+      setIsCompressing(true)
+      try {
+        const compressedUrl = await compressImage(file)
+        setImageUrl(compressedUrl)
+      } catch (error) {
+        console.error('图片压缩失败:', error)
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          setImageUrl(event.target?.result as string)
+        }
+        reader.readAsDataURL(file)
+      } finally {
+        setIsCompressing(false)
       }
-      reader.readAsDataURL(file)
     }
   }, [])
 
@@ -59,8 +131,8 @@ export default function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
     <div className="bg-white rounded-2xl shadow-lg p-6 fade-in">
       <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
         <span className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-lg flex items-center justify-center text-white">
-          <Image size={18} />
-        </span>
+            <ImageIcon size={18} />
+          </span>
         记录今日生活
       </h2>
 
@@ -83,7 +155,12 @@ export default function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
             上传参考图片（可选）
           </label>
           
-          {imageUrl ? (
+          {isCompressing ? (
+            <div className="rounded-xl p-8 text-center bg-gray-50">
+              <div className="w-10 h-10 border-4 border-primary-400 border-t-transparent rounded-full loading-spinner mx-auto mb-3" />
+              <p className="text-gray-500 text-sm">正在压缩图片...</p>
+            </div>
+          ) : imageUrl ? (
             <div className="relative rounded-xl overflow-hidden border-2 border-primary-300">
               <img src={imageUrl} alt="参考图片" className="w-full h-40 object-cover" />
               <button
@@ -114,7 +191,7 @@ export default function InputPanel({ onSubmit, isLoading }: InputPanelProps) {
                 点击或拖拽图片到这里上传
               </p>
               <p className="text-gray-400 text-xs mt-1">
-                支持 JPG、PNG 格式
+                支持 JPG、PNG 格式（自动压缩至 1MB 以下）
               </p>
             </div>
           )}

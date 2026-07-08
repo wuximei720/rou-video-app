@@ -6,6 +6,8 @@ interface VideoGenerationRequest {
   imageUrls?: string[]
   aspectRatio?: string
   duration?: number
+  resolution?: string
+  generateAudio?: boolean
 }
 
 interface VideoGenerationResponse {
@@ -46,6 +48,8 @@ export async function generateVideo(request: VideoGenerationRequest): Promise<Vi
           content,
           aspect_ratio: request.aspectRatio || '9:16',
           duration: request.duration || 8,
+          resolution: request.resolution || '720p',
+          generate_audio: request.generateAudio !== undefined ? request.generateAudio : true,
           return_last_frame: true,
         },
         {

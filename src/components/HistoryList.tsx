@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { History, Trash2, Eye, Clock } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
@@ -20,9 +20,13 @@ interface HistoryListProps {
 export default function HistoryList({ onSelect }: HistoryListProps) {
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const initializedRef = useRef(false)
 
   useEffect(() => {
-    fetchHistory()
+    if (!initializedRef.current) {
+      initializedRef.current = true
+      fetchHistory()
+    }
   }, [])
 
   const fetchHistory = async () => {
