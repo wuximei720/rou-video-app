@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Play, Pause, Download, RotateCcw } from 'lucide-react'
+import React, { useState, useRef } from 'react'
+import { Play, Pause, Download, RotateCcw, RefreshCw } from 'lucide-react'
 
 interface VideoPreviewProps {
   videoUrl: string
@@ -8,10 +8,21 @@ interface VideoPreviewProps {
 
 export default function VideoPreview({ videoUrl, onRegenerate }: VideoPreviewProps) {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [showControls, setShowControls] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying)
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause()
+      } else {
+        videoRef.current.play().catch(err => {
+          console.error('Play error:', err)
+          setError('无法播放视频，请尝试下载')
+        })
+      }
+    }
   }
 
   const handleDownload = () => {
@@ -21,27 +32,69 @@ export default function VideoPreview({ videoUrl, onRegenerate }: VideoPreviewPro
     link.click()
   }
 
+  const handleReload = () => {
+    if (videoRef.current) {
+      setError(null)
+      setIsLoading(true)
+      videoRef.current.load()
+    }
+  }
+
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 fade-in">
       <h2 className="text-xl font-bold text-gray-800 mb-4">视频预览</h2>
 
-      <div className="video-container mb-4 relative" onMouseEnter={() => setShowControls(true)} onMouseLeave={() => setShowControls(false)}>
-        <video
-          src={videoUrl}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          className="w-full h-full"
-          controls
-        />
+      <div className="video-container mb-4 rounded-xl overflow-hidden bg-black">
+        {error ? (
+          <div className="flex flex-col items-center justify-center py-12 text-white">
+            <RefreshCw size={32} className="text-red-400 mb-3" />
+            <p className="text-gray-300 mb-2">{error}</p>
+            <button
+              onClick={handleReload}
+              className="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white text-sm"
+            >
+              重新加载
+            </button>
+          </div>
+        ) : (
+          <div className="relative">
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onLoadedData={() => {
+                setIsLoading(false)
+                setError(null)
+              }}
+              onError={(e) => {
+                console.error('Video error:', e)
+                setError('视频加载失败，请尝试下载')
+                setIsLoading(false)
+              }}
+              className="w-full h-auto"
+              controls
+              playsInline
+              muted
+              preload="auto"
+            />
 
-        <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${showControls ? 'opacity-100' : 'opacity-0'}`}>
-          <button
-            onClick={handlePlayPause}
-            className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
-          >
-            {isPlaying ? <Pause size={28} /> : <Play size={28} fill="currentColor" />}
-          </button>
-        </div>
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <div className="w-12 h-12 border-4 border-primary-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${!isPlaying && !isLoading ? 'opacity-100' : 'opacity-0'}`}>
+              <button
+                onClick={handlePlayPause}
+                className="w-16 h-16 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+              >
+                {isPlaying ? <Pause size={28} /> : <Play size={28} fill="currentColor" />}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3">

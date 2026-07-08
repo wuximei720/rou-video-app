@@ -74,52 +74,36 @@ async function executeVideoGeneration(id: string) {
 
     const scenes = JSON.parse(generation.scenes) as Array<{ prompt: string; duration: number; description: string }>
 
-    for (let i = 0; i < scenes.length; i++) {
-      const scene = scenes[i]
-      try {
-        const imageUrls = generation.referenceImageUrl
-          ? [generation.referenceImageUrl]
-          : undefined
+    const imageUrls = generation.referenceImageUrl
+      ? [generation.referenceImageUrl]
+      : undefined
 
-        const videoResponse = await generateVideo({
-          prompt: scene.prompt,
-          imageUrls,
-          aspectRatio: '9:16',
-          duration: scene.duration,
-        })
+    const videoUrl = await generateVideo({
+      prompt: scenes.map(s => s.prompt).join(' | '),
+      imageUrls,
+      aspectRatio: '9:16',
+      duration: scenes.reduce((sum, s) => sum + s.duration, 0),
+    })
 
-        const videoUrl = await waitForVideo(videoResponse.taskId)
+    const { videoUrl: generatedVideoUrl, lastFrameUrl } = await waitForVideo(videoUrl.taskId)
 
-        await prisma.videoGeneration.update({
-          where: { id },
-          data: {
-            generatedVideoUrl: videoUrl,
-            status: 'processing',
-          },
-        })
-
-        const subtitles = scenes.map(s => s.description)
-        const durations = scenes.map(s => s.duration)
-        const processedUrl = await processVideo(videoUrl, subtitles, durations, undefined, 'warm')
-
-        await prisma.videoGeneration.update({
-          where: { id },
-          data: {
-            processedVideoUrl: processedUrl,
-            status: 'completed',
-          },
-        })
-
-        return
-      } catch (error) {
-        console.error(`Scene ${i + 1} failed:`, error)
-        continue
-      }
+    let processedUrl = generatedVideoUrl
+    try {
+      const subtitles = scenes.map(s => s.description)
+      const durations = scenes.map(s => s.duration)
+      processedUrl = await processVideo(generatedVideoUrl, subtitles, durations, undefined, 'warm')
+    } catch (processError) {
+      console.warn('Video processing skipped (ffmpeg not available):', processError)
     }
 
     await prisma.videoGeneration.update({
       where: { id },
-      data: { status: 'failed' },
+      data: {
+        generatedVideoUrl,
+        processedVideoUrl: processedUrl,
+        thumbnailUrl: lastFrameUrl,
+        status: 'completed',
+      },
     })
   } catch (error) {
     console.error('Video generation execution error:', error)

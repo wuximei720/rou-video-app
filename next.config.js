@@ -16,6 +16,11 @@ const nextConfig = {
     config.stats = 'errors-only'
     return config
   },
+  api: {
+    bodyParser: {
+      sizeLimit: '15mb',
+    },
+  },
 }
 
 module.exports = nextConfig

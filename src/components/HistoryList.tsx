@@ -7,6 +7,7 @@ interface HistoryItem {
   userInput: string
   referenceImageUrl: string | null
   processedVideoUrl: string | null
+  thumbnailUrl: string | null
   status: string
   createdAt: string
   scenes: Array<{ id: number; description: string; shotType: string; duration: number; prompt: string }>
@@ -96,14 +97,30 @@ export default function HistoryList({ onSelect }: HistoryListProps) {
             >
               {item.processedVideoUrl ? (
                 <div
-                  className="w-16 h-28 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                  className="w-16 h-28 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity relative"
                   onClick={() => onSelect(item)}
                 >
-                  <img
-                    src={item.processedVideoUrl}
-                    alt="视频缩略图"
-                    className="w-full h-full object-cover"
-                  />
+                  {item.thumbnailUrl ? (
+                    <img
+                      src={item.thumbnailUrl}
+                      alt="视频缩略图"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <video
+                      src={item.processedVideoUrl}
+                      poster=""
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                    />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                    <svg viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+                      <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                      <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+                    </svg>
+                  </div>
                 </div>
               ) : (
                 <div className="w-16 h-28 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -113,12 +130,12 @@ export default function HistoryList({ onSelect }: HistoryListProps) {
 
               <div className="flex-1 min-w-0">
                 <p className="text-gray-700 font-medium truncate">{item.userInput}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`px-2 py-0.5 rounded-full text-xs ${statusColors[item.status] || 'bg-gray-100 text-gray-600'}`}>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs ${statusColors[item.status] || 'bg-gray-100 text-gray-600'}`}>
                     {statusLabels[item.status] || item.status}
                   </span>
-                  <span className="text-xs text-gray-400 flex items-center gap-1">
-                    <Clock size={10} />
+                  <span className="text-xs text-gray-400 flex items-center gap-0.5">
+                    <Clock size={9} />
                     {formatDate(new Date(item.createdAt))}
                   </span>
                 </div>

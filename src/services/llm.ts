@@ -38,6 +38,11 @@ const SCENE_ANALYSIS_PROMPT = `
 `
 
 export async function analyzeScenes(userInput: string): Promise<Scene[]> {
+  if (!DOUBAO_API_KEY) {
+    console.warn('DOUBAO_API_KEY not configured, using fallback scenes')
+    return fallbackScenes(userInput)
+  }
+
   try {
     const response = await axios.post(
       DOUBAO_BASE_URL,
@@ -60,6 +65,7 @@ export async function analyzeScenes(userInput: string): Promise<Scene[]> {
         headers: {
           'Authorization': `Bearer ${DOUBAO_API_KEY}`,
           'Content-Type': 'application/json',
+          'x-is-encrypted': 'true',
         },
         timeout: 60000,
       }
@@ -81,8 +87,8 @@ export async function analyzeScenes(userInput: string): Promise<Scene[]> {
     }
 
     return fallbackScenes(userInput)
-  } catch (error) {
-    console.error('LLM API error:', error)
+  } catch (error: any) {
+    console.error('LLM API error:', error.response?.data || error.message || error)
     return fallbackScenes(userInput)
   }
 }
